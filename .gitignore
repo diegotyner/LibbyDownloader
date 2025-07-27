@@ -1,0 +1,6 @@
+# security
+.env
+
+# Cookies
+libby_local_storage.*
+cookies.json

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Libby Sniffer",
+  "version": "1.0",
+  "description": "Logs media API requests on Libby.",
+  "permissions": ["webRequest", "storage", "downloads"],
+  "host_permissions": [
+    "https://*.listen.overdrive.com/*",
+    "https://audioclips.cdn.overdrive.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.listen.overdrive.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Libby Sniffer Test",
+    "default_icon": "hello_extensions.png",
+    "default_popup": "popup.html"
+  }
+}
