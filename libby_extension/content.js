@@ -46,7 +46,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
         }
       },
-      randomDelay(5000, 10000),
+      randomDelay(2500, 5000),
+      // randomDelay(5000, 10000),
     );
     sendResponse({ status: "started" });
   } else if (request.type === "STOP_CLICKING") {
