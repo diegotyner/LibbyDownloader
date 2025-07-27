@@ -1,6 +1,11 @@
 # LibbyDownloader
 
-**HIGH RISK OF ACCOUNT SUSPENSION**.
+---
+
+**HIGH RISK OF ACCOUNT SUSPENSION**
+
+---
+
 The following downloader has not been vetted for scale, use with caution. I have not been banned yet, but very possible that I will be.
 
 Usage:
