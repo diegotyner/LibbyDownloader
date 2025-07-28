@@ -19,5 +19,10 @@ Usage:
 7. Click `Start Clicking` in the pop up, and keep the page open while it slowly captures network requests.
    - It is intentionally slow to avoid being flagged by Overdrive/Libby. Being flagged could result in account suspension, as many [similar softwares can attest to](https://github.com/PsychedelicPalimpsest/LibbyRip/issues/14)
 
-Enjoy downloads! Soon I'll implement some python software for quickly implementing audiobook metadata. Ignore the `old` folder, those are unused first angles at downloading content.
+Enjoy downloads! Ignore the `old` folder, those are unused first angles at downloading content.
+
+Future directions:
+- Software for quickly implementing audiobook metadata
+- Splitting mp3s into chapter tracks, shouldn't be too hard to do based on the Libby table of contents menu.
+
 
