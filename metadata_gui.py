@@ -40,7 +40,7 @@ class AudiobookTaggerApp(QWidget):
         self.setGeometry(100, 100, 800, 600) # Increased size for table
 
         self.selected_folder = ""
-        # self.selected_cover_path = ""
+        self.selected_cover_path = ""
         self.mp3_files = [] # To store list of MP3 files found
 
         self.init_ui()
@@ -77,18 +77,18 @@ class AudiobookTaggerApp(QWidget):
         metadata_form_layout.addRow("Genre (TCON):", self.genre_input)
         main_layout.addLayout(metadata_form_layout)
 
-        # # --- Section 3: Cover Art Selection ---
-        # cover_layout = QHBoxLayout()
-        # self.cover_label = QLabel("Cover Image (JPG/PNG):")
-        # self.cover_path_display = QLineEdit()
-        # self.cover_path_display.setReadOnly(True)
-        # self.browse_cover_btn = QPushButton("Browse...")
-        # self.browse_cover_btn.clicked.connect(self.browse_cover)
-        #
-        # cover_layout.addWidget(self.cover_label)
-        # cover_layout.addWidget(self.cover_path_display)
-        # cover_layout.addWidget(self.browse_cover_btn)
-        # main_layout.addLayout(cover_layout)
+        # --- Section 3: Cover Art Selection ---
+        cover_layout = QHBoxLayout()
+        self.cover_label = QLabel("Cover Image (JPG/PNG):")
+        self.cover_path_display = QLineEdit()
+        self.cover_path_display.setReadOnly(True)
+        self.browse_cover_btn = QPushButton("Browse...")
+        self.browse_cover_btn.clicked.connect(self.browse_cover)
+
+        cover_layout.addWidget(self.cover_label)
+        cover_layout.addWidget(self.cover_path_display)
+        cover_layout.addWidget(self.browse_cover_btn)
+        main_layout.addLayout(cover_layout)
 
         # --- Section 4: File Preview Table ---
         self.preview_table = QTableWidget()
@@ -114,11 +114,11 @@ class AudiobookTaggerApp(QWidget):
             self.folder_path_display.setText(folder)
             self.load_mp3_files()
 
-    # def browse_cover(self):
-    #     cover_file, _ = QFileDialog.getOpenFileName(self, "Select Cover Image", "", "Image Files (*.jpg *.jpeg *.png)")
-    #     if cover_file:
-    #         self.selected_cover_path = cover_file
-    #         self.cover_path_display.setText(cover_file)
+    def browse_cover(self):
+        cover_file, _ = QFileDialog.getOpenFileName(self, "Select Cover Image", "", "Image Files (*.jpg *.jpeg *.png)")
+        if cover_file:
+            self.selected_cover_path = cover_file
+            self.cover_path_display.setText(cover_file)
 
     def load_mp3_files(self):
         self.mp3_files = sorted([f for f in os.listdir(self.selected_folder) if f.startswith("libby_") and f.endswith(".mp3")])
