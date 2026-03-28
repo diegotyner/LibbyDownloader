@@ -1,154 +1,148 @@
-const urls = [];
-const undownloaded_urls_queue = [];
-let lastDownloadTime = 0; // To enforce minimum delay between *downloads*
-const MIN_DOWNLOAD_DELAY_MS = 5000;
+// allUrls: ordered array of { url, chapterKey, filename, downloaded }
+// downloadedKeys: Set of chapterKeys for fast skip-check lookups
+let allUrls = [];
+let downloadedKeys = new Set();
 let downloadsEnabled = false;
-let isProcessingQueue = false;
+let lastDownloadTime = 0;
 
-// listening for redirect requests
+const urls_to_listen = [
+  "*://*.libbyapp.com/*",
+  "*://*.listen.overdrive.com/*",
+  "*://*.cdn.overdrive.com/*",
+];
+
+// On startup, restore history from storage
+chrome.storage.local.get(["allUrls"], (result) => {
+  if (result.allUrls) {
+    allUrls = result.allUrls;
+    downloadedKeys = new Set(
+      allUrls.filter((e) => e.downloaded).map((e) => e.chapterKey),
+    );
+    console.log(
+      `Restored ${allUrls.length} chapters (${downloadedKeys.size} already downloaded).`,
+    );
+  }
+});
+
+function persistHistory() {
+  chrome.storage.local.set({ allUrls });
+}
+
+// Extract stable chapter identity from the referrer (from) URL
+// e.g. "...Fmt425-Part03.mp3?..." → "Part03"
+function getChapterKey(url) {
+  const match = url.match(/Part\d+/i);
+  return match ? match[0] : url;
+}
+
 chrome.webRequest.onBeforeRedirect.addListener(
   (details) => {
-    console.log("Redirect detected:");
-    // console.log("From: ", details.url);
-    // console.log("To: ", details.redirectUrl);
+    const chapterKey = getChapterKey(details.url); // stable, from referrer
+    const redirectUrl = details.redirectUrl; // signed CDN url, changes each time
 
-    if (!urls.includes(details.redirectUrl)) {
-      urls.push(details.redirectUrl);
-      console.log("Redirect is new:");
+    const alreadyKnown = allUrls.some((e) => e.chapterKey === chapterKey);
 
-      if (!downloadsEnabled) {
-        console.log("Redirect detected, but downloads are paused."); // Optional: for debugging
-        undownloaded_urls_queue.push(details.redirectUrl);
-        return; // Exit early if downloads are not enabled
+    if (alreadyKnown) {
+      if (downloadedKeys.has(chapterKey)) {
+        console.log(`Already downloaded, skipping: ${chapterKey}`);
+        return;
       }
-      const filename = `libby_${(urls.length - 1).toString().padStart(3, "0")}.mp3`;
-      const currentUrl = details.redirectUrl;
-
-      const now = Date.now();
-      const timeSinceLastDownload = now - lastDownloadTime;
-      const delayNeeded = MIN_DOWNLOAD_DELAY_MS - timeSinceLastDownload;
-
-      if (delayNeeded > 0) {
-        console.log(`Delaying download of ${filename} by ${delayNeeded}ms.`);
-        setTimeout(() => {
-          initiateSingleDownload(currentUrl, filename);
-          lastDownloadTime = Date.now(); // Update time after initiating download
-        }, delayNeeded);
-      } else {
-        initiateSingleDownload(currentUrl, filename);
-        lastDownloadTime = now; // Update time immediately
-      }
+      // Seen before but not downloaded (was paused) — refresh url and fall through
+      console.log(
+        `Previously sniffed but not downloaded, retrying: ${chapterKey}`,
+      );
+      const entry = allUrls.find((e) => e.chapterKey === chapterKey);
+      entry.url = redirectUrl; // refresh signed url in case old one expired
+    } else {
+      // Brand new chapter
+      const index = allUrls.length;
+      const filename = `libby_${index.toString().padStart(3, "0")}.mp3`;
+      allUrls.push({
+        url: redirectUrl,
+        chapterKey,
+        filename,
+        downloaded: false,
+      });
+      persistHistory();
+      console.log(`New chapter sniffed: ${chapterKey} → ${filename}`);
     }
-    console.log(urls);
+
+    if (!downloadsEnabled) {
+      console.log("Downloads paused, chapter saved but not downloaded.");
+      return;
+    }
+
+    const entry = allUrls.find((e) => e.chapterKey === chapterKey);
+    const now = Date.now();
+    const delayNeeded = 500 - (now - lastDownloadTime);
+
+    if (delayNeeded > 0) {
+      setTimeout(() => initiateDownload(entry), delayNeeded);
+    } else {
+      initiateDownload(entry);
+    }
+    lastDownloadTime = Date.now();
   },
-  {
-    urls: ["*://*.listen.overdrive.com/*"],
-  },
+  { urls: urls_to_listen },
 );
 
-function initiateSingleDownload(url, filename) {
+function initiateDownload(entry) {
   return new Promise((resolve, reject) => {
-    // Make this return a Promise
     chrome.downloads.download(
-      {
-        url: url,
-        filename: filename,
-        saveAs: false,
-      },
+      { url: entry.url, filename: entry.filename, saveAs: false },
       (downloadId) => {
         if (chrome.runtime.lastError) {
           console.error(
-            `Download failed for ${filename}:`,
+            `Download failed for ${entry.filename}:`,
             chrome.runtime.lastError.message,
           );
           reject(chrome.runtime.lastError.message);
         } else if (downloadId === undefined) {
-          console.error(
-            `Download failed for ${filename}: downloadId undefined (URL: ${url})`,
-          );
+          console.error(`Download failed: undefined ID (${entry.url})`);
           reject("Download ID undefined");
         } else {
-          console.log(`Download started for ${filename} (ID: ${downloadId}).`);
-          resolve(); // Resolve the promise on successful initiation
+          console.log(
+            `Download started: ${entry.filename} (ID: ${downloadId})`,
+          );
+          entry.downloaded = true;
+          downloadedKeys.add(entry.chapterKey);
+          persistHistory();
+          resolve();
         }
       },
     );
   });
 }
 
-// NEW: Async function to process the undownloaded_urls_queue sequentially
-async function processDownloadQueue() {
-  if (isProcessingQueue) {
-    console.log("Download queue already being processed.");
-    return;
-  }
-  isProcessingQueue = true; // Set flag to prevent re-entry
-
-  while (undownloaded_urls_queue.length > 0 && downloadsEnabled) {
-    const currentUrl = undownloaded_urls_queue.shift(); // Get and remove the first URL from the queue
-
-    const urlIndex = urls.indexOf(currentUrl);
-    const filename = `libby_${(urlIndex !== -1 ? urlIndex : urls.length).toString().padStart(3, "0")}.mp3`;
-
-    console.log(
-      `Processing queue: Attempting to download ${filename} from ${currentUrl}`,
-    );
-
-    const now = Date.now();
-    const timeSinceLastDownload = now - lastDownloadTime;
-    const delayNeeded = MIN_DOWNLOAD_DELAY_MS - timeSinceLastDownload;
-
-    if (delayNeeded > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayNeeded));
-    }
-
-    try {
-      await initiateSingleDownload(currentUrl, filename);
-      lastDownloadTime = Date.now(); // Update time after initiating download
-    } catch (error) {
-      console.error(
-        `Failed to download from queue: ${currentUrl}, Error: ${error}`,
-      );
-      // Decide whether to continue or stop on error
-    }
-
-    // Add a delay AFTER each download initiation, not just before the next one
-    if (undownloaded_urls_queue.length > 0 && downloadsEnabled) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, MIN_DOWNLOAD_DELAY_MS),
-      );
-    }
-  }
-  isProcessingQueue = false;
-  if (!downloadsEnabled) {
-    console.log(
-      "Download queue processing paused because downloads were disabled.",
-    );
-  } else {
-    console.log("Download queue processing complete.");
-  }
-}
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "ENABLE_DOWNLOADS") {
     downloadsEnabled = true;
     console.log("Downloads enabled.");
-    // Start processing the queue only if it's not already running
-    processDownloadQueue(); // NEW: Call the queue processing function
-
     sendResponse({
       status: "downloads_enabled",
-      queue_size: undownloaded_urls_queue.length,
+      urlsCaptured: allUrls.length,
+      urlsDownloaded: downloadedKeys.size,
     });
   } else if (
     request.type === "DISABLE_DOWNLOADS" ||
     request.type === "EXPORT_URLS_COMPLETE"
   ) {
     downloadsEnabled = false;
-    console.log("Downloads disabled.");
-    // If the queue is processing, this flag will eventually stop it.
-    // If you need immediate halt, you'd need to manage promises/timeouts more aggressively.
+    console.log(request.type);
     sendResponse({ status: "downloads_disabled" });
+  } else if (request.type === "GET_STATE") {
+    sendResponse({
+      downloadsEnabled,
+      urlsCaptured: allUrls.length,
+      urlsDownloaded: downloadedKeys.size,
+    });
+  } else if (request.type === "CLEAR_HISTORY") {
+    allUrls = [];
+    downloadedKeys = new Set();
+    chrome.storage.local.remove("allUrls");
+    console.log("Session history cleared.");
+    sendResponse({ status: "cleared" });
   }
+
   return true;
 });

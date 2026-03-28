@@ -1,18 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <title>Audiobook Auto-Clicker</title>
-  <style>
-    body { width: 200px; padding: 10px; font-family: sans-serif; }
-    button { width: 100%; padding: 10px; margin-top: 10px; cursor: pointer; }
-    #status { margin-top: 10px; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <h2>Auto-Clicker</h2>
-  <button id="startButton">Start Clicking</button>
-  <button id="stopButton" disabled>Stop Clicking</button>
-  <div id="status"></div>
-  <script src="popup.js"></script>
-</body>
+  <head>
+    <title>Audiobook Auto-Clicker</title>
+    <style>
+      body {
+        width: 200px;
+        padding: 10px;
+        font-family: sans-serif;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        cursor: pointer;
+      }
+      #status {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      .stat {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #444;
+      }
+      label {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-size: 12px;
+      }
+      input[type="number"] {
+        width: 70px;
+        padding: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Auto-Clicker</h2>
+
+    <div class="stat">Captured: <span id="capturedCount">0</span></div>
+    <div class="stat">Downloaded: <span id="downloadedCount">0</span></div>
+
+    <label
+      >Min Delay (ms):
+      <input type="number" id="minDelay" value="2500" min="500"
+    /></label>
+    <label
+      >Max Delay (ms):
+      <input type="number" id="maxDelay" value="7500" min="500"
+    /></label>
+
+    <button id="startButton">Start Clicking</button>
+    <button id="stopButton" disabled>Stop Clicking</button>
+    <button id="clearButton">Clear History</button>
+
+    <div id="status"></div>
+    <script src="popup.js"></script>
+  </body>
 </html>
