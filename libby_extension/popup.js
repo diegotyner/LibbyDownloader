@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const startButton = document.getElementById("startButton");
   const stopButton = document.getElementById("stopButton");
   const clearButton = document.getElementById("clearButton");
+  const imgDownloadButton = document.getElementById("coverButton");
   const statusDiv = document.getElementById("status");
   const capturedCount = document.getElementById("capturedCount");
   const downloadedCount = document.getElementById("downloadedCount");
@@ -98,6 +99,24 @@ document.addEventListener("DOMContentLoaded", () => {
       downloadedCount.textContent = 0;
       statusDiv.textContent = "Status: History cleared.";
     });
+  });
+
+  imgDownloadButton.addEventListener("click", async () => {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (!tab) return;
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: "DOWNLOAD_COVER",
+    });
+    if (response?.status === "found") {
+      chrome.runtime.sendMessage({ type: "SAVE_COVER", url: response.url });
+      statusDiv.textContent = "Status: Cover downloaded.";
+    } else {
+      statusDiv.textContent = "Status: Cover not found.";
+    }
   });
 
   // Listen for book-end signal from content script

@@ -173,6 +173,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log("No recovery needed: first chapter already downloaded.");
     }
     sendResponse({ status: "ok" });
+  } else if (request.type === "SAVE_COVER") {
+    const filename = `${bookTitle}_cover.jpg`;
+    chrome.downloads.download(
+      { url: request.url, filename, saveAs: false },
+      (downloadId) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Cover download failed:",
+            chrome.runtime.lastError.message,
+          );
+        } else {
+          console.log(`Cover downloaded: ${filename} (ID: ${downloadId})`);
+        }
+      },
+    );
+    sendResponse({ status: "ok" });
   }
 
   return true;

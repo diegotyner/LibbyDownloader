@@ -100,6 +100,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else {
       sendResponse({ status: "not_active" });
     }
+  } else if (request.type === "DOWNLOAD_COVER") {
+    const coverImg = document.querySelector("image.cover-painter-image");
+    if (!coverImg) {
+      sendResponse({ status: "not_found" });
+      return true;
+    }
+    const url =
+      coverImg.getAttribute("xlink:href") || coverImg.getAttribute("href");
+    sendResponse({ status: "found", url });
   }
 
   return true;
