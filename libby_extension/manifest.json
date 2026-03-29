@@ -6,7 +6,7 @@
   "permissions": ["webRequest", "tabs", "storage", "downloads"],
   "host_permissions": [
     "https://*.listen.overdrive.com/*",
-    "https://audioclips.cdn.overdrive.com/*",
+    "https://*.cdn.overdrive.com/*",
     "https://*.libbyapp.com/*"
   ],
   "background": {
