@@ -9,6 +9,7 @@ function clickElement(el) {
   el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let clickInterval = null;
 
 function scheduleNextClick(min, max) {
@@ -32,7 +33,9 @@ function scheduleNextClick(min, max) {
         console.log("End found, exiting...");
         clickElement(nextBtn);
         clickInterval = null;
-        chrome.runtime.sendMessage({ type: "EXPORT_URLS_COMPLETE" });
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ type: "EXPORT_URLS_COMPLETE" });
+        }, 3000);
       } else {
         // Button exists but label doesn't match — retry
         scheduleNextClick(min, max);
@@ -40,6 +43,41 @@ function scheduleNextClick(min, max) {
     },
     randomDelay(min, max),
   );
+}
+async function init(min, max) {
+  const prevBtn = document.querySelector("button.chapter-bar-prev-button");
+  const nextBtn = document.querySelector("button.chapter-bar-next-button");
+
+  if (!prevBtn || !nextBtn) {
+    console.log("Buttons not found, likely wrong frame. Exiting.");
+    return;
+  }
+
+  // scrape title before anything else
+  const bookTitle = document.title
+    .replace("Libby - Open: ", "")
+    .trim()
+    .replace(/ /g, "_")
+    .replace(/[<>:"/\\|?*]/g, "");
+  console.log(`Book detected: ${bookTitle}`);
+
+  // enable downloads
+  await new Promise((r) =>
+    chrome.runtime.sendMessage({ type: "ENABLE_DOWNLOADS" }, r),
+  );
+
+  // attempt to download Part01 if it was captured but not yet downloaded
+  await new Promise((r) =>
+    chrome.runtime.sendMessage(
+      {
+        type: "DOWNLOAD_FIRST_PART",
+        bookTitle,
+      },
+      r,
+    ),
+  );
+
+  scheduleNextClick(min, max);
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -50,10 +88,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    const min = request.min || 2500;
-    const max = request.max || 5000;
+    const min = request.min || 5000;
+    const max = request.max || 10000;
+    console.log("Starting: running init refetch before clicking");
+    init(min, max); // function used to capture first snippet
     console.log(`Starting clicks with delay ${min}-${max}ms`);
-    scheduleNextClick(min, max);
     sendResponse({ status: "started" });
   } else if (request.type === "STOP_CLICKING") {
     if (clickInterval) {

@@ -4,6 +4,7 @@ let allUrls = [];
 let downloadedKeys = new Set();
 let downloadsEnabled = false;
 let lastDownloadTime = 0;
+let bookTitle = "libby"; // default fallback
 
 const urls_to_listen = [
   "*://*.libbyapp.com/*",
@@ -55,8 +56,7 @@ chrome.webRequest.onBeforeRedirect.addListener(
       entry.url = redirectUrl; // refresh signed url in case old one expired
     } else {
       // Brand new chapter
-      const index = allUrls.length;
-      const filename = `libby_${index.toString().padStart(3, "0")}.mp3`;
+      const filename = `${bookTitle}_${chapterKey.toString().padStart(3, "0")}.mp3`;
       allUrls.push({
         url: redirectUrl,
         chapterKey,
@@ -142,6 +142,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.storage.local.remove("allUrls");
     console.log("Session history cleared.");
     sendResponse({ status: "cleared" });
+  } else if (request.type === "DOWNLOAD_FIRST_PART") {
+    bookTitle = request.bookTitle;
+    console.log(`Starting book: ${bookTitle}`);
+
+    // always fix filenames for any entries sniffed before title was known
+    allUrls.forEach((e) => {
+      if (e.filename.startsWith("libby_")) {
+        e.filename = `${bookTitle}_${e.chapterKey}.mp3`;
+      }
+    });
+    persistHistory();
+
+    const isOnlyOneCapture = allUrls.length === 1;
+    const firstEntry = allUrls[0];
+    const isUndownloaded = firstEntry && !firstEntry.downloaded;
+
+    if (isOnlyOneCapture && isUndownloaded) {
+      console.log(`Recovering first chapter: ${firstEntry.chapterKey}`);
+      initiateDownload(firstEntry);
+    } else if (!isOnlyOneCapture) {
+      console.log(
+        `Skipping recovery: ${allUrls.length} chapters already captured, not a clean start.`,
+      );
+    } else {
+      console.log("No recovery needed: first chapter already downloaded.");
+    }
+    sendResponse({ status: "ok" });
   }
 
   return true;

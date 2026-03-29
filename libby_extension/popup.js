@@ -26,6 +26,19 @@ document.addEventListener("DOMContentLoaded", () => {
       );
   });
 
+  // refresh the popup so that it stays accurate
+  const pollInterval = setInterval(() => {
+    chrome.runtime.sendMessage({ type: "GET_STATE" }, (response) => {
+      if (response)
+        updateUI(
+          response.downloadsEnabled,
+          response.urlsCaptured,
+          response.urlsDownloaded,
+        );
+    });
+  }, 1000);
+  window.addEventListener("unload", () => clearInterval(pollInterval));
+
   startButton.addEventListener("click", async () => {
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -36,19 +49,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const min = parseInt(minDelayInput.value) || 2500;
-    const max = parseInt(maxDelayInput.value) || 5000;
+    const min = parseInt(minDelayInput.value) || 5000;
+    const max = parseInt(maxDelayInput.value) || 10000;
 
-    // 1. Enable downloads in background
-    const bgResponse = await chrome.runtime.sendMessage({
-      type: "ENABLE_DOWNLOADS",
-    });
-    if (!bgResponse || bgResponse.status !== "downloads_enabled") {
-      statusDiv.textContent = "Status: Failed to enable background.";
-      return;
-    }
+    // ENABLE_DOWNLOADS moved to content.js
 
-    // 2. Start clicking in content script with user-defined delays
+    // Start clicking in content script with user-defined delays
     try {
       const csResponse = await chrome.tabs.sendMessage(tab.id, {
         type: "START_CLICKING",
