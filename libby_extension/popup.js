@@ -52,29 +52,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const min = parseInt(minDelayInput.value) || 5000;
     const max = parseInt(maxDelayInput.value) || 10000;
 
-    // ENABLE_DOWNLOADS moved to content.js
+    // 1. Enable downloads in background — popup owns this, unconditionally
+    const bgResponse = await chrome.runtime.sendMessage({
+      type: "ENABLE_DOWNLOADS",
+    });
+    if (!bgResponse || bgResponse.status !== "downloads_enabled") {
+      statusDiv.textContent = "Status: Failed to enable background.";
+      return;
+    }
 
     // Start clicking in content script with user-defined delays
     try {
-      const csResponse = await chrome.tabs.sendMessage(tab.id, {
+      await chrome.tabs.sendMessage(tab.id, {
         type: "START_CLICKING",
         min,
         max,
       });
-
-      if (
-        csResponse?.status === "started" ||
-        csResponse?.status === "already_active"
-      ) {
-        updateUI(true, bgResponse.urlsCaptured, bgResponse.urlsDownloaded);
-      } else {
-        statusDiv.textContent = "Status: Failed (Is this a Libby page?)";
-        chrome.runtime.sendMessage({ type: "DISABLE_DOWNLOADS" });
-      }
     } catch {
+      // content script not ready — but downloads are already enabled, don't disable
       statusDiv.textContent = "Status: Error (refresh the Libby tab).";
-      chrome.runtime.sendMessage({ type: "DISABLE_DOWNLOADS" });
+      return;
     }
+
+    updateUI(true, bgResponse.urlsCaptured, bgResponse.urlsDownloaded);
   });
 
   stopButton.addEventListener("click", async () => {
@@ -95,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
   clearButton.addEventListener("click", () => {
     chrome.runtime.sendMessage({ type: "CLEAR_HISTORY" }, () => {
       capturedCount.textContent = 0;
+      downloadedCount.textContent = 0;
       statusDiv.textContent = "Status: History cleared.";
     });
   });
@@ -104,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (request.type === "EXPORT_URLS_COMPLETE") {
       statusDiv.textContent = "Status: Book complete.";
       updateUI(false);
-      chrome.runtime.sendMessage({ type: "DISABLE_DOWNLOADS" });
     }
   });
 });

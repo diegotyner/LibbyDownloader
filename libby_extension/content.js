@@ -45,9 +45,11 @@ function scheduleNextClick(min, max) {
   );
 }
 async function init(min, max) {
+  await sleep(100); // let dom settle
   const prevBtn = document.querySelector("button.chapter-bar-prev-button");
   const nextBtn = document.querySelector("button.chapter-bar-next-button");
 
+  // This rejects the worker in the incorret frame
   if (!prevBtn || !nextBtn) {
     console.log("Buttons not found, likely wrong frame. Exiting.");
     return;
@@ -60,11 +62,6 @@ async function init(min, max) {
     .replace(/ /g, "_")
     .replace(/[<>:"/\\|?*]/g, "");
   console.log(`Book detected: ${bookTitle}`);
-
-  // enable downloads
-  await new Promise((r) =>
-    chrome.runtime.sendMessage({ type: "ENABLE_DOWNLOADS" }, r),
-  );
 
   // attempt to download Part01 if it was captured but not yet downloaded
   await new Promise((r) =>

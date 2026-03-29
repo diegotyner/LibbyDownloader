@@ -56,7 +56,7 @@ chrome.webRequest.onBeforeRedirect.addListener(
       entry.url = redirectUrl; // refresh signed url in case old one expired
     } else {
       // Brand new chapter
-      const filename = `${bookTitle}_${chapterKey.toString().padStart(3, "0")}.mp3`;
+      const filename = `${bookTitle}_${chapterKey}.mp3`;
       allUrls.push({
         url: redirectUrl,
         chapterKey,
@@ -139,6 +139,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === "CLEAR_HISTORY") {
     allUrls = [];
     downloadedKeys = new Set();
+    downloadsEnabled = false;
     chrome.storage.local.remove("allUrls");
     console.log("Session history cleared.");
     sendResponse({ status: "cleared" });
@@ -154,11 +155,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     persistHistory();
 
-    const isOnlyOneCapture = allUrls.length === 1;
     const firstEntry = allUrls[0];
-    const isUndownloaded = firstEntry && !firstEntry.downloaded;
+    if (!firstEntry) {
+      console.log("No chapters captured yet.");
+      sendResponse({ status: "ok" });
+      return;
+    }
 
-    if (isOnlyOneCapture && isUndownloaded) {
+    if (allUrls.length === 1 && !firstEntry.downloaded) {
       console.log(`Recovering first chapter: ${firstEntry.chapterKey}`);
       initiateDownload(firstEntry);
     } else if (!isOnlyOneCapture) {
