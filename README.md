@@ -27,6 +27,10 @@ Enjoy downloads! Ignore the `old` folder, those are unused first angles at downl
 
 Future directions:
 
-- Downloading cover image with the extension.
 - Software for quickly implementing audiobook metadata.
 - Splitting mp3s into chapter tracks, shouldn't be too hard to do based on the Libby table of contents menu.
+
+IMMEDIATe next steps:
+
+- [ ] Add a "passive listening" mode where the auto-clicker is not active (remedies the 'skipping snippets' issue).
+- [ ] Downloading cover image with the extension.

@@ -85,11 +85,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    const min = request.min || 5000;
-    const max = request.max || 10000;
+    const min = request.min || 5;
+    const max = request.max || 10;
+    const min_ms = min * 1000;
+    const max_ms = max * 1000;
     console.log("Starting: running init refetch before clicking");
-    init(min, max); // function used to capture first snippet
-    console.log(`Starting clicks with delay ${min}-${max}ms`);
+    init(min_ms, max_ms); // function used to capture first snippet
+    console.log(`Starting clicks with delay ${min}-${max}s`);
     sendResponse({ status: "started" });
   } else if (request.type === "STOP_CLICKING") {
     if (clickInterval) {

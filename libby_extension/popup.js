@@ -50,8 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const min = parseInt(minDelayInput.value) || 5000;
-    const max = parseInt(maxDelayInput.value) || 10000;
+    const min = parseInt(minDelayInput.value) || 5;
+    const max = parseInt(maxDelayInput.value) || 10;
 
     // 1. Enable downloads in background — popup owns this, unconditionally
     const bgResponse = await chrome.runtime.sendMessage({
