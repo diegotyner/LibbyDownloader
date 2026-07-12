@@ -30,7 +30,24 @@ Future directions:
 - Software for quickly implementing audiobook metadata.
 - Splitting mp3s into chapter tracks, shouldn't be too hard to do based on the Libby table of contents menu.
 
-IMMEDIATe next steps:
+IMMEDIATE next steps:
 
-- [ ] Add a "passive listening" mode where the auto-clicker is not active (remedies the 'skipping snippets' issue).
-- [ ] Downloading cover image with the extension.
+- [ ] Add a "passive listening" mode where the auto-clicker is not active
+      (remedies the 'skipping snippets' issue). Open questions: audio element
+      selector (iframe/shadow DOM?), auto-advance via `ended` event vs fully
+      manual, coexist as toggle with click-mode or replace it. `SET_MODE`
+      message + `backgroundState.mode` plumbing already in place; content.ts
+      logic not started.
+- [ ] Build out mode toggle UI in App.tsx (deferred during rewrite; message
+      types and background handler exist, popup has no UI for it yet).
+- [ ] Live capture/skip log in popup — show a running log of sniffed chapters
+      as they happen, e.g. "Just saw snippet 4" → "...2nd time" → "Just saw
+      snippet 6". Needs a new background → popup broadcast message (e.g.
+      `CHAPTER_SEEN`), fired from `onBeforeRedirect`. Popup needs new local
+      state to accumulate the log, not just current counts.
+- [ ] Review cover image download: `.jpg`-only extension guard added during
+      TS rewrite is a behavior change from v1 (which accepted any URL).
+      Confirm Libby only serves `.jpg`, or loosen the check.
+- [ ] Decide fate of `DOWNLOAD_FIRST_PART` recovery/retry logic, and whether
+      chapter keys need namespacing per book title to avoid collisions.
+- [ ] Display on popup current book title

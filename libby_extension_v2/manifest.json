@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Libby DL v2",
+  "version": "2.0.0",
+  "description": "Intercepts and downloads media API requests on Libby.",
+  "permissions": ["webRequest", "tabs", "storage", "downloads"],
+  "host_permissions": [
+    "https://*.listen.overdrive.com/*",
+    "https://*.cdn.overdrive.com/*",
+    "https://*.libbyapp.com/*"
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": "icons/Libby_DL_Icon.png"
+  },
+  "background": {
+    "service_worker": "src/background/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.listen.overdrive.com/*",
+        "https://*.libbyapp.com/*"
+      ],
+      "all_frames": true,
+      "js": ["src/content/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
