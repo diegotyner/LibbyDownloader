@@ -65,7 +65,8 @@ function scheduleNextClick(min: number, max: number) {
 }
 
 function scrapeBookTitle(): string | null {
-  if (!document.title || !document.title.startsWith("Libby - Open:")) {
+  if (!document.title) {
+    // || !document.title.startsWith("Libby - Open:")) {
     return null; // not on a book page at all
   }
 
