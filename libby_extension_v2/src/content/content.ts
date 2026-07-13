@@ -65,6 +65,7 @@ function scheduleNextClick(min: number, max: number) {
 }
 
 function scrapeBookTitle(): string | null {
+  return "A_Storm_of_Swords";
   if (!document.title) {
     // || !document.title.startsWith("Libby - Open:")) {
     return null; // not on a book page at all
@@ -157,6 +158,7 @@ chrome.runtime.onMessage.addListener(
       const coverImg = document.querySelector("image.cover-painter-image");
       if (!coverImg) {
         // Wrong frame — say nothing, let the frame that actually has the element respond
+        console.log("[ctnt.ts] Wrong frame? no cover image found.");
         return false;
       }
 
