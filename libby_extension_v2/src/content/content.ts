@@ -160,12 +160,14 @@ chrome.runtime.onMessage.addListener(
         return false;
       }
 
-      const url =
+      const rawUrl =
         coverImg.getAttribute("href") || coverImg.getAttribute("xlink:href");
-      if (!url || !url.toLowerCase().endsWith(".jpg")) {
+      if (!rawUrl || !rawUrl.toLowerCase().endsWith(".jpg")) {
         console.log("[ctnt.ts] Cover image url not parsed or invalid.");
         return false;
       }
+      // Handle relative URLs
+      const url = new URL(rawUrl, window.location.href).href;
       sendResponse({ status: "found", url });
       return true;
     }
