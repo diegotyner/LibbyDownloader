@@ -4,6 +4,17 @@ import type {
   ContentResponse,
 } from "../shared/messages";
 
+chrome.runtime.sendMessage<ContentToBgRequest>({
+  type: "CONTENT_SCRIPT_LOADED",
+});
+const scrapedTitle = scrapeBookTitle();
+if (scrapedTitle) {
+  chrome.runtime.sendMessage<ContentToBgRequest>({
+    type: "SET_BOOK_TITLE",
+    bookTitle: scrapedTitle,
+  });
+}
+
 function randomDelay(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -65,22 +76,21 @@ function scrapeBookTitle(): string | null {
     .replace(/[<>:"/\\|?*]/g, "");
 }
 
-async function init(min: number, max: number) {
+async function startChapterSkipping(min: number, max: number) {
   await sleep(200); // let dom settle
   const prevBtn = document.querySelector("button.chapter-bar-prev-button");
   const nextBtn = document.querySelector("button.chapter-bar-next-button");
 
   // This rejects the worker in the incorret frame
-  if (!prevBtn || !nextBtn) {
+  if (!(prevBtn || nextBtn)) {
     console.log("[ctnt.ts] Buttons not found, likely wrong frame. Exiting.");
     return;
   }
 
-  // scrape title before anything else
-  const bookTitle = scrapeBookTitle() || "libby";
-  console.log(`[ctnt.ts] Book detected: ${bookTitle}`);
+  scheduleNextClick(min, max);
+}
 
-  // attempt to download Part01 if it was captured but not yet downloaded
+async function requestDownloadFirstPart(bookTitle: string) {
   await new Promise((r) =>
     chrome.runtime.sendMessage<ContentToBgRequest>(
       {
@@ -90,8 +100,6 @@ async function init(min: number, max: number) {
       r,
     ),
   );
-
-  scheduleNextClick(min, max);
 }
 
 chrome.runtime.onMessage.addListener(
@@ -107,13 +115,27 @@ chrome.runtime.onMessage.addListener(
         return true;
       }
 
-      const min = request.min || 5;
-      const max = request.max || 10;
-      const min_ms = min * 1000;
-      const max_ms = max * 1000;
-      console.log("[ctnt.ts] Starting: running init refetch before clicking");
-      init(min_ms, max_ms); // function used to capture first snippet
-      console.log(`[ctnt.ts] Starting clicks with delay ${min}-${max}s`);
+      if (request.mode === "click") {
+        const min = request.min || 5;
+        const max = request.max || 10;
+        const min_ms = min * 1000;
+        const max_ms = max * 1000;
+        console.log("[ctnt.ts] Starting: running init refetch before clicking");
+        startChapterSkipping(min_ms, max_ms); // function used to capture first snippet
+        console.log(`[ctnt.ts] Starting clicks with delay ${min}-${max}s`);
+      } else {
+        // else its passive, do nothing
+        console.log(
+          "[ctnt.ts] Passive mode: downloads enabled, no auto-advance.",
+        );
+      }
+
+      // scrape title before anything else
+      const bookTitle = scrapeBookTitle() || "libby";
+      console.log(`[ctnt.ts] Book detected: ${bookTitle}`);
+      // attempt to download Part01 if it was captured but not yet downloaded
+      requestDownloadFirstPart(bookTitle);
+
       sendResponse({ status: "started" });
       return true;
     }

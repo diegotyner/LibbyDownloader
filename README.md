@@ -50,4 +50,6 @@ IMMEDIATE next steps:
       Confirm Libby only serves `.jpg`, or loosen the check.
 - [ ] Decide fate of `DOWNLOAD_FIRST_PART` recovery/retry logic, and whether
       chapter keys need namespacing per book title to avoid collisions.
-- [ ] Display on popup current book title
+- [ ] Verify that setBookTItle on page load is working properly.
+  - [ ] Verify that the title on change warning works properly
+- [x] Display on popup current book title

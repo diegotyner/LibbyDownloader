@@ -35,6 +35,7 @@ function returnDefaultState(): ExtensionState {
     isActive: false,
     captures: [],
     lastCaptureLabel: null,
+    titleChangeWarning: null,
   };
 }
 let backgroundState: ExtensionState = returnDefaultState();
@@ -167,6 +168,20 @@ function initiateDownload(entry: CaptureEntry) {
   });
 }
 function setBookTitle(newTitle: string) {
+  const prevTitle = backgroundState.bookTitle;
+  const isRealChange =
+    prevTitle !== "libby" &&
+    newTitle !== "libby" &&
+    newTitle !== prevTitle &&
+    backgroundState.captures.length > 0;
+
+  if (isRealChange) {
+    console.warn(
+      `[bg.ts] Title changed mid-session: "${prevTitle}" -> "${newTitle}".`,
+    );
+    backgroundState.titleChangeWarning = `Detected "${newTitle}" but history exists for "${prevTitle}". Clear history before continuing?`;
+  }
+
   backgroundState.bookTitle = newTitle;
 
   // fix filenames for any entries sniffed before the title was known
@@ -187,6 +202,19 @@ chrome.runtime.onMessage.addListener(
     sendResponse: (r: BgResponse) => void,
   ) => {
     let allUrls = backgroundState.captures;
+
+    if (request.type === "CONTENT_SCRIPT_LOADED") {
+      if (backgroundState.downloadsEnabled) {
+        console.log(
+          "[bg.ts] Content script reloaded mid-session — disabling downloads.",
+        );
+        backgroundState.downloadsEnabled = false;
+        persistHistory();
+      }
+      // no sendResponse needed — fire-and-forget, same pattern as SET_BOOK_TITLE
+      return true;
+    }
+
     if (request.type === "ENABLE_DOWNLOADS") {
       backgroundState.downloadsEnabled = true;
       console.log("[bg.ts] Downloads enabled.");

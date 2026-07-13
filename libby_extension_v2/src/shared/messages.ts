@@ -30,11 +30,12 @@ export type BgResponse =
 export type ContentToBgRequest =
   | { type: "DOWNLOAD_FIRST_PART"; bookTitle: string }
   | { type: "EXPORT_URLS_COMPLETE" }
-  | { type: "SET_BOOK_TITLE"; bookTitle: string };
+  | { type: "SET_BOOK_TITLE"; bookTitle: string }
+  | { type: "CONTENT_SCRIPT_LOADED" };
 
 // ── Popup -> Content script ──────────────────────────────────────
 export type ContentRequest =
-  | { type: "START_CLICKING"; min: number; max: number }
+  | { type: "START_CLICKING"; mode: Mode; min: number; max: number }
   | { type: "STOP_CLICKING" }
   | { type: "DOWNLOAD_COVER" }
   | { type: "GET_TITLE" };

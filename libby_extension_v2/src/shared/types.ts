@@ -15,4 +15,5 @@ export interface ExtensionState {
   isActive: boolean; // is content.ts currently clicking/listening right now
   captures: CaptureEntry[];
   lastCaptureLabel: string | null; // e.g. "Captured new snippet: Part 4"
+  titleChangeWarning: string | null;
 }

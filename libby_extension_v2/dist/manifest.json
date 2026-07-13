@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/content.js-C2tzpXtr.js"
+        "assets/content.js-DkGllltt.js"
       ],
       "matches": [
         "https://*.listen.overdrive.com/*",
@@ -42,7 +42,7 @@
         "https://*.listen.overdrive.com/*"
       ],
       "resources": [
-        "assets/content.js-C2tzpXtr.js"
+        "assets/content.js-DkGllltt.js"
       ],
       "use_dynamic_url": false
     }

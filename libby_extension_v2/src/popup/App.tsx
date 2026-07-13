@@ -6,7 +6,7 @@ import type {
 	ContentRequest,
 	ContentResponse,
 } from "../shared/messages";
-import type { ExtensionState } from "../shared/types";
+import type { ExtensionState, Mode } from "../shared/types";
 
 
 const DEFAULT_STATE: ExtensionState = {
@@ -16,6 +16,7 @@ const DEFAULT_STATE: ExtensionState = {
 	isActive: false,
 	captures: [],
 	lastCaptureLabel: null,
+	titleChangeWarning: null,
 };
 
 function sendBg(req: BgRequest): Promise<BgResponse> {
@@ -30,7 +31,12 @@ function sendContent(tabId: number, req: ContentRequest): Promise<ContentRespons
 export default function App() {
 
 	const [state, setState] = useState<ExtensionState>(DEFAULT_STATE);
-	const [status, setStatus] = useState("Idle");
+	const [notice, setNotice] = useState<string | null>(null);
+	const status = state.downloadsEnabled
+		? state.mode === "passive"
+			? "Active (listening)"
+			: "Active (clicking)"
+		: "Idle";
 	const [minDelay, setMinDelay] = useState(5);
 	const [maxDelay, setMaxDelay] = useState(10);
 
@@ -70,7 +76,7 @@ export default function App() {
 				"type" in request &&
 				(request as { type: string }).type === "EXPORT_URLS_COMPLETE"
 			) {
-				setStatus("Book complete.");
+				setNotice("Book complete.");
 			}
 		}
 		chrome.runtime.onMessage.addListener(onMessage);
@@ -103,39 +109,53 @@ export default function App() {
 	async function handleStart() {
 		const tab = await getActiveTab();
 		if (!tab?.id) {
-			setStatus("No active tab.");
+			setNotice("No active tab.");
 			return;
 		}
 
 		const bgResponse = await sendBg({ type: "ENABLE_DOWNLOADS" });
 		if (bgResponse.status !== "downloads_enabled") {
-			setStatus("Failed to enable background.");
+			setNotice("Failed to enable background.");
 
 			return;
 
 		}
 
 		try {
-			await sendContent(tab.id, { type: "START_CLICKING", min: minDelay, max: maxDelay });
+			await sendContent(tab.id, { type: "START_CLICKING", mode: state.mode, min: minDelay, max: maxDelay });
 		} catch {
-			setStatus("Error (refresh the Libby tab).");
+			setNotice("Error (refresh the Libby tab).");
 			return;
 		}
 
-		setStatus("Active");
+		setNotice(null);
+	}
+
+
+	async function handleModeChange(newMode: Mode) {
+		await sendBg({ type: "SET_MODE", mode: newMode });
 	}
 
 	async function handleStop() {
 		const tab = await getActiveTab();
 		await sendBg({ type: "DISABLE_DOWNLOADS" });
 		if (tab?.id) await sendContent(tab.id, { type: "STOP_CLICKING" });
-		setStatus("Idle");
+		setNotice(null);
 	}
 
 	async function handleClear() {
+		const tab = await getActiveTab();
 		await sendBg({ type: "CLEAR_HISTORY" });
+		if (tab?.id) {
+			try {
+				await sendContent(tab.id, { type: "STOP_CLICKING" });
+			} catch {
+				// content script not injected on this tab — nothing to stop
+			}
+		}
+
 		setState(DEFAULT_STATE);
-		setStatus("History cleared.");
+		setNotice("History cleared.");
 	}
 
 	async function handleCover() {
@@ -145,48 +165,71 @@ export default function App() {
 		const response = await sendContent(tab.id, { type: "DOWNLOAD_COVER" });
 		if (response.status === "found") {
 			await sendBg({ type: "SAVE_COVER", url: response.url });
-			setStatus("Cover downloaded.");
+			setNotice("Cover downloaded.");
 
 		} else {
-			setStatus("Cover not found.");
+			setNotice("Cover not found.");
 		}
 	}
 
 	const capturedCount = state.captures.length;
 	const downloadedCount = state.captures.filter((c) => c.downloaded).length;
 
-
 	return (
 		<div className="flex flex-col gap-2 p-3 w-64">
 			<h2 className="text-lg font-bold">Libby DL</h2>
-			<div className="text-xs text-gray-600">Book: {state.bookTitle != "libby" ? state.bookTitle : "Not detected"}</div>
+			<div className="text-sm text-gray-950">Book: {state.bookTitle != "libby" ? state.bookTitle : "Not detected"}</div>
 			<div className="text-xs text-gray-600">Captured: {capturedCount}</div>
 			<div className="text-xs text-gray-600">Downloaded: {downloadedCount}</div>
 
-
-			<div className="flex gap-2 text-xs items-center">
-				<label>
-					Min (s)
-					<input
-						type="number"
-						className="ml-1 w-14 rounded border px-1"
-						value={minDelay}
-						onChange={(e) => setMinDelay(parseInt(e.target.value) || 5)}
-					/>
-				</label>
-				<label>
-					Max (s)
-					<input
-						type="number"
-
-						className="ml-1 w-14 rounded border px-1"
-						value={maxDelay}
-						onChange={(e) => setMaxDelay(parseInt(e.target.value) || 10)}
-
-					/>
-
-				</label>
+			{/* Segmented Mode Display */}
+			<div className="flex rounded overflow-hidden border text-xs">
+				<button
+					onClick={() => handleModeChange("passive")}
+					disabled={state.downloadsEnabled}
+					className={`flex-1 py-1.5 ${state.mode === "passive"
+						? "bg-blue-500 text-white"
+						: "bg-gray-100 hover:bg-gray-200"
+						} disabled:opacity-50`}
+				>
+					Passive
+				</button>
+				<button
+					onClick={() => handleModeChange("click")}
+					disabled={state.downloadsEnabled}
+					className={`flex-1 py-1.5 ${state.mode === "click"
+						? "bg-blue-500 text-white"
+						: "bg-gray-100 hover:bg-gray-200"
+						} disabled:opacity-50`}
+				>
+					Active
+				</button>
 			</div>
+
+			{state.mode === "click" && (
+				<div className="flex gap-2 text-xs items-center">
+					<label>
+						Min (s)
+
+						<input
+
+							type="number"
+							className="ml-1 w-14 rounded border px-1"
+							value={minDelay}
+							onChange={(e) => setMinDelay(parseInt(e.target.value) || 5)}
+						/>
+					</label>
+					<label>
+						Max (s)
+						<input
+							type="number"
+							className="ml-1 w-14 rounded border px-1"
+							value={maxDelay}
+							onChange={(e) => setMaxDelay(parseInt(e.target.value) || 10)}
+						/>
+					</label>
+				</div>
+			)}
 
 			<button
 				onClick={handleStart}
@@ -216,8 +259,16 @@ export default function App() {
 				Download Cover
 			</button>
 
-
+			{/* Status Display */}
 			<div className="mt-1 text-sm font-semibold">Status: {status}</div>
+			{notice && <div className="text-xs text-gray-500">{notice}</div>}
+
+			{/* Warning about changing title */}
+			{state.titleChangeWarning && (
+				<div className="text-xs text-amber-700 bg-amber-50 rounded p-2">
+					{state.titleChangeWarning}
+				</div>
+			)}
 		</div>
 	);
 
