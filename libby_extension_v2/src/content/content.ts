@@ -65,10 +65,17 @@ function scheduleNextClick(min: number, max: number) {
 }
 
 function scrapeBookTitle(): string | null {
-  return "A_Storm_of_Swords";
+  // return "A_Storm_of_Swords";
   if (!document.title) {
     // || !document.title.startsWith("Libby - Open:")) {
     return null; // not on a book page at all
+  }
+
+  // Needed to stop an iframe race condition, but can potentially cause false negatives
+  for (const f_ext of ["jpg", "jpeg", "png", "gif", "webp"]) {
+    if (document.title.toLowerCase().endsWith(f_ext)) {
+      return null;
+    }
   }
 
   return document.title
