@@ -48,6 +48,20 @@ const urls_to_listen = [
   "*://*.cdn.overdrive.com/*",
 ];
 
+function syncIcon() {
+  const path = backgroundState.downloadsEnabled
+    ? "icons/Libby_DL_Icon_Red.png"
+    : "icons/Libby_DL_Icon.png";
+  chrome.action.setIcon({ path }, () => {
+    if (chrome.runtime.lastError) {
+      console.error(
+        "[bg.ts] setIcon failed:",
+        chrome.runtime.lastError.message,
+      );
+    }
+  });
+}
+
 // On startup, restore history from storage
 chrome.storage.local.get(
   ["backgroundState"],
@@ -62,6 +76,7 @@ chrome.storage.local.get(
         `[bg.ts] Restored ${allUrls.length} chapters (${downloadedKeys.size} already downloaded).`,
       );
     }
+    syncIcon();
   },
 );
 
@@ -210,6 +225,7 @@ chrome.runtime.onMessage.addListener(
         );
         backgroundState.downloadsEnabled = false;
         persistHistory();
+        syncIcon();
       }
       // no sendResponse needed — fire-and-forget, same pattern as SET_BOOK_TITLE
       return true;
@@ -224,6 +240,7 @@ chrome.runtime.onMessage.addListener(
         urlsDownloaded: downloadedKeys.size,
       });
       persistHistory();
+      syncIcon();
       return true;
     }
 
@@ -235,6 +252,7 @@ chrome.runtime.onMessage.addListener(
       console.log(`[bg.ts] Received request: ${request.type}`);
       sendResponse({ status: "downloads_disabled" });
       persistHistory();
+      syncIcon();
       return true;
     }
 
@@ -262,6 +280,7 @@ chrome.runtime.onMessage.addListener(
       backgroundState = returnDefaultState();
       console.log("[bg.ts] Session history cleared.");
       sendResponse({ status: "cleared" });
+      syncIcon();
       return true;
     }
 

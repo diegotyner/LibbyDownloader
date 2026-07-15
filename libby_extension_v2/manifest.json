@@ -27,5 +27,14 @@
       "js": ["src/content/content.js"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "https://*.listen.overdrive.com/*",
+        "https://*.libbyapp.com/*"
+      ],
+      "resources": ["icons/*.png"]
+    }
   ]
 }

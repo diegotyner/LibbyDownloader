@@ -65,8 +65,18 @@ function scheduleNextClick(min: number, max: number) {
 }
 
 function scrapeBookTitle(): string | null {
-  // return "A_Storm_of_Swords";
-  if (!document.title) {
+  const prevBtn = document.querySelector("button.chapter-bar-prev-button");
+  const nextBtn = document.querySelector("button.chapter-bar-next-button");
+
+  // This rejects the worker in the incorret frame
+  if (!(prevBtn || nextBtn)) {
+    console.log(
+      "[ctnt.ts] (Title scrape) Buttons not found, likely wrong frame. Exiting.",
+    );
+    return null;
+  }
+
+  if (!document.title || document.title === "Libby") {
     // || !document.title.startsWith("Libby - Open:")) {
     return null; // not on a book page at all
   }
@@ -92,7 +102,9 @@ async function startChapterSkipping(min: number, max: number) {
 
   // This rejects the worker in the incorret frame
   if (!(prevBtn || nextBtn)) {
-    console.log("[ctnt.ts] Buttons not found, likely wrong frame. Exiting.");
+    console.log(
+      "[ctnt.ts] (Click scheduling) Buttons not found, likely wrong frame. Exiting.",
+    );
     return;
   }
 
