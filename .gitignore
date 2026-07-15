@@ -4,3 +4,6 @@
 # Cookies
 libby_local_storage.*
 cookies.json
+
+# chrome extension
+node_modules
