@@ -18,20 +18,25 @@ The following downloader has not been vetted for scale, use with caution. I have
 
 1. Navigate to your libby book on browser.
 2. Go all the way to the start of the book (can click Table of Contents in the middle of UI to quickly navigate there).
-3. Open up the extension, and clear history (removes cached snippets, ensures good ordering of downloads)
-4. **Reload page** (this step is critical for capturing the first mp3 snippet request, otherwise libby won't reset it).
+3. Open up the extension, and click `Clear History` (removes potential clutter from past books)
+4. **Reload page** (this step is critical for capturing the first mp3 snippet request, otherwise libby won't rerequest the first snippet).
 5. Decide whether to use _Passive_ or _Active_ mode for the downloader.
 
-- Active Mode - Auto-clicks to next Libby chapter and downloads snippets as they are reqquested. This works well for quickly downloading books.
+- Active Mode - Auto-clicks to next Libby chapter and downloads snippets as they are requested. This works well for quickly downloading books.
   - However, for some books this can result in skipping snippets, which can be fixed by using the _Passive_ mode.
 - Passive Mode - Turns on the listener for snippet requests, but does not autoclick.
   - Recommended to listen to a book on 2x speed to download it faster.
   - If this is too slow and the autoclicker doesn't work, you can still manually fast forward through the book using the timeline slider.
 
-6. (If using active mode) Set your desired interval between requests (longer is safer), and click `Start Clicking` in the pop up. Keep the page open while it slowly captures network requests.
+6. (If using active mode) Set your desired interval between requests (longer is safer)
    - It is intentionally slow to avoid being flagged by Overdrive/Libby. Being flagged could result in account suspension, as many [similar softwares can attest to](https://github.com/PsychedelicPalimpsest/LibbyRip/issues/14)
+7. Click `Start` in the pop up. Keep the page open while it slowly captures network requests. Ensure the extension stays in the red "Active" color (this can be made easier by pinning the extension).
 
-Enjoy downloads! Ignore the `old` folder, those are unused first angles at downloading content.
+Enjoy your downloads!
+
+---
+
+Ignore the `old` folder, those are unused first angles at downloading content.
 
 Future directions:
 
