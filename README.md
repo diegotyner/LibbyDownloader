@@ -2,11 +2,13 @@
 
 ---
 
-**HIGH RISK OF ACCOUNT SUSPENSION**
+**WARNING: Possibility Of Account Suspension**
 
 ---
 
 The following downloader has not been vetted for scale, use with caution. I have not been banned yet, but very possible that I will be. _Always use in ways that don't associate your account with 'botlike behavior'_ (don't just scrape the book and leave, build good credit by leaving the book running anyway).
+
+![LibbyDownloader Preview](./.github/assets/LibbyDL_Preview.jpg)
 
 ## Installation:
 
@@ -43,7 +45,7 @@ Future directions:
 - Software for quickly implementing audiobook metadata. (this is the python GUI script, ignore for now)
 - Splitting mp3s into chapter tracks, shouldn't be too hard to do based on the Libby table of contents menu.
 
-IMMEDIATE next steps:
+Next steps:
 
 - [ ] Live capture/skip log in popup — show a running log of sniffed chapters as they happen
 - [x] Add visual indicator of extension mode (active/passive). \[ended up changing icon color\]
